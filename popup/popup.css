@@ -1,0 +1,193 @@
+/* ============================================================
+   Simple Volume Control — Popup Stylesheet
+   ダークテーマ / ミニマル / 視認性重視
+   ============================================================ */
+
+:root {
+  --bg: #1a1a2e;
+  --surface: #22223a;
+  --text: #e8e8f0;
+  --text-dim: #8888a0;
+  --accent: #7c5cfc;
+  --accent-glow: rgba(124, 92, 252, 0.35);
+  --accent-hover: #9b7eff;
+  --danger: #ff6b8a;
+  --radius: 12px;
+  --radius-sm: 8px;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  width: 300px;
+  overflow: hidden;
+}
+
+/* ---------- Container ---------- */
+
+.container {
+  padding: 20px 22px 18px;
+}
+
+.error-view {
+  text-align: center;
+}
+
+/* ---------- Title ---------- */
+
+.title {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  margin-bottom: 16px;
+}
+
+/* ---------- Volume Display ---------- */
+
+.volume-display {
+  font-size: 48px;
+  font-weight: 700;
+  text-align: center;
+  color: var(--text);
+  line-height: 1;
+  margin-bottom: 18px;
+  font-variant-numeric: tabular-nums;
+  transition: color 0.2s;
+}
+
+.volume-display.boosted {
+  color: var(--accent);
+}
+
+/* ---------- Slider ---------- */
+
+.slider-track-wrapper {
+  margin-bottom: 18px;
+}
+
+.slider-markers {
+  display: flex;
+  justify-content: space-between;
+  padding: 0 2px;
+  margin-bottom: 6px;
+}
+
+.marker {
+  font-size: 10px;
+  color: var(--text-dim);
+  opacity: 0.6;
+}
+
+.marker-100 {
+  position: relative;
+  left: -14%;
+}
+
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--surface);
+  outline: none;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: none;
+  box-shadow: 0 0 10px var(--accent-glow), 0 2px 6px rgba(0, 0, 0, 0.3);
+  cursor: grab;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+input[type="range"]::-webkit-slider-thumb:hover {
+  transform: scale(1.15);
+  box-shadow: 0 0 16px var(--accent-glow), 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+input[type="range"]::-webkit-slider-thumb:active {
+  cursor: grabbing;
+  transform: scale(1.05);
+}
+
+/* ---------- Controls ---------- */
+
+.controls {
+  display: flex;
+  gap: 10px;
+}
+
+.btn {
+  flex: 1;
+  padding: 10px 0;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.1s, box-shadow 0.15s;
+  letter-spacing: 0.02em;
+}
+
+.btn:active {
+  transform: scale(0.97);
+}
+
+.btn-reset {
+  background: var(--surface);
+  color: var(--text);
+}
+
+.btn-reset:hover {
+  background: #2d2d48;
+}
+
+.btn-save {
+  background: var(--surface);
+  color: var(--text-dim);
+}
+
+.btn-save:hover {
+  background: #2d2d48;
+}
+
+.btn-save.active {
+  background: var(--accent);
+  color: #fff;
+  box-shadow: 0 2px 12px var(--accent-glow);
+}
+
+.btn-save.active:hover {
+  background: var(--accent-hover);
+}
+
+.save-icon {
+  margin-right: 4px;
+  font-size: 12px;
+}
+
+/* ---------- Error ---------- */
+
+.error-msg {
+  font-size: 13px;
+  color: var(--danger);
+  margin-top: 16px;
+  line-height: 1.5;
+}

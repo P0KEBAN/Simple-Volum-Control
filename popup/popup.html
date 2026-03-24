@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=320">
+  <link rel="stylesheet" href="popup.css">
+  <title>Volume Control</title>
+</head>
+<body>
+  <div class="container" id="main-view">
+    <h1 class="title">Volume Control</h1>
+
+    <div class="volume-display" id="volume-display">100%</div>
+
+    <div class="slider-track-wrapper">
+      <div class="slider-markers">
+        <span class="marker">0</span>
+        <span class="marker marker-100">100</span>
+        <span class="marker">600</span>
+      </div>
+      <input
+        type="range"
+        id="volume-slider"
+        min="0"
+        max="600"
+        value="100"
+        step="1"
+      >
+    </div>
+
+    <div class="controls">
+      <button id="reset-btn" class="btn btn-reset" title="Reset to 100%">Reset</button>
+      <button id="save-btn" class="btn btn-save" title="Save volume for this URL">
+        <span class="save-icon">&#9829;</span>
+        <span id="save-label">Save</span>
+      </button>
+    </div>
+  </div>
+
+  <div class="container error-view" id="error-view" style="display:none;">
+    <h1 class="title">Volume Control</h1>
+    <p class="error-msg" id="error-msg">このタブでは音量制御を開始できません</p>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
