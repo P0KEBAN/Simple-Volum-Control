@@ -75,21 +75,30 @@ body {
 }
 
 .slider-markers {
-  display: flex;
-  justify-content: space-between;
-  padding: 0 2px;
+  position: relative;
+  height: 12px;
   margin-bottom: 6px;
 }
 
 .marker {
+  position: absolute;
+  top: 0;
   font-size: 10px;
   color: var(--text-dim);
   opacity: 0.6;
+  transform: translateX(-50%);
+}
+
+.marker-0 {
+  left: 10px;
 }
 
 .marker-100 {
-  position: relative;
-  left: -14%;
+  left: calc(10px + (100% - 20px) / 6);
+}
+
+.marker-600 {
+  left: calc(100% - 10px);
 }
 
 input[type="range"] {
