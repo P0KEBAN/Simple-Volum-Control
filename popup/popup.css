@@ -168,30 +168,6 @@ input[type="range"]::-webkit-slider-thumb:active {
   background: #2d2d48;
 }
 
-.btn-save {
-  background: var(--surface);
-  color: var(--text-dim);
-}
-
-.btn-save:hover {
-  background: #2d2d48;
-}
-
-.btn-save.active {
-  background: var(--accent);
-  color: #fff;
-  box-shadow: 0 2px 12px var(--accent-glow);
-}
-
-.btn-save.active:hover {
-  background: var(--accent-hover);
-}
-
-.save-icon {
-  margin-right: 4px;
-  font-size: 12px;
-}
-
 /* ---------- Error ---------- */
 
 .error-msg {
