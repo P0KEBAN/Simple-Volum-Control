@@ -25,6 +25,37 @@ async function ensureOffscreen() {
   }
 }
 
+// ---------- offscreen 側のセッション確認 ----------
+
+async function checkOffscreenSession(tabId) {
+  try {
+    await ensureOffscreen();
+    const response = await chrome.runtime.sendMessage({
+      type: "check-session",
+      target: "offscreen",
+      tabId,
+    });
+    return response?.exists || false;
+  } catch {
+    return false;
+  }
+}
+
+// ---------- offscreen 側のセッション破棄 ----------
+
+async function destroyOffscreenSession(tabId) {
+  try {
+    await ensureOffscreen();
+    await chrome.runtime.sendMessage({
+      type: "destroy-session",
+      target: "offscreen",
+      tabId,
+    });
+  } catch {
+    // offscreen が存在しない場合は無視
+  }
+}
+
 // ---------- tabCapture → offscreen ----------
 
 async function startCapture(tabId) {
@@ -44,7 +75,7 @@ async function startCapture(tabId) {
     }
   }
 
-  // 既にキャプチャ中のタブなら、音量だけ更新して返す
+  // ── ケース1: service worker 側にセッション情報あり → 既存利用 ──
   if (activeSessions.has(tabId)) {
     const session = activeSessions.get(tabId);
 
@@ -67,12 +98,57 @@ async function startCapture(tabId) {
     return { volume: session.volume, saved: session.saved, url: session.url };
   }
 
-  // 新規キャプチャ
+  // ── ケース2: service worker にはないが offscreen 側にセッションが残っている
+  //     (service worker 再起動後などに発生)
+  const offscreenHasSession = await checkOffscreenSession(tabId);
+  if (offscreenHasSession) {
+    // offscreen 側のセッションを再利用
+    // 音量を同期
+    chrome.runtime.sendMessage({
+      type: "set-volume",
+      target: "offscreen",
+      tabId,
+      volume,
+    });
+
+    // service worker 側のセッション情報を復元
+    activeSessions.set(tabId, { volume, saved, url });
+    return { volume, saved, url };
+  }
+
+  // ── ケース3: 完全に新規キャプチャ ──
   await ensureOffscreen();
 
-  const streamId = await chrome.tabCapture.getMediaStreamId({
-    targetTabId: tabId,
-  });
+  let streamId;
+  try {
+    streamId = await chrome.tabCapture.getMediaStreamId({
+      targetTabId: tabId,
+    });
+  } catch (e) {
+    // "Cannot capture a tab with an active stream." の場合、
+    // 既存ストリームを破棄してリトライ
+    if (
+      e.message &&
+      e.message.includes("active stream")
+    ) {
+      console.warn(
+        "startCapture: active stream detected, destroying and retrying...",
+        tabId
+      );
+      await destroyOffscreenSession(tabId);
+
+      // リトライ（1回だけ）
+      try {
+        streamId = await chrome.tabCapture.getMediaStreamId({
+          targetTabId: tabId,
+        });
+      } catch (retryError) {
+        throw retryError;
+      }
+    } else {
+      throw e;
+    }
+  }
 
   await chrome.runtime.sendMessage({
     type: "start-capture",
@@ -174,6 +250,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
 chrome.tabs.onRemoved.addListener((tabId) => {
   activeSessions.delete(tabId);
+  // offscreen のセッションも破棄
+  destroyOffscreenSession(tabId);
 });
 
 // ---------- popup 初期化 ----------

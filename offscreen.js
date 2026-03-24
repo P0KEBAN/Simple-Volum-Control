@@ -3,7 +3,7 @@
 // Web Audio API による音量制御の本体
 // ============================================================
 
-// tabId → { audioContext, gainNode, source } のマップ
+// tabId → { audioContext, gainNode, source, stream } のマップ
 const audioSessions = new Map();
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
@@ -17,6 +17,22 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     case "set-volume":
       handleSetVolume(message);
       break;
+
+    // Service Worker からセッション存在確認を受ける
+    case "check-session": {
+      const tabId = message.tabId;
+      const exists = audioSessions.has(tabId);
+      sendResponse({ exists });
+      return true;
+    }
+
+    // セッション破棄リクエスト
+    case "destroy-session": {
+      const tabId = message.tabId;
+      destroySession(tabId);
+      sendResponse({ ok: true });
+      return true;
+    }
   }
 });
 
@@ -64,5 +80,23 @@ function handleSetVolume(message) {
   const session = audioSessions.get(tabId);
   if (session) {
     session.gainNode.gain.value = volume;
+  }
+}
+
+// ---------- セッション破棄 ----------
+
+function destroySession(tabId) {
+  const session = audioSessions.get(tabId);
+  if (session) {
+    try {
+      session.source.disconnect();
+      session.gainNode.disconnect();
+      session.audioContext.close();
+      // MediaStream のトラックも停止
+      session.stream.getTracks().forEach((track) => track.stop());
+    } catch (e) {
+      console.warn("offscreen: destroy session error", e);
+    }
+    audioSessions.delete(tabId);
   }
 }
