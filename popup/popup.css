@@ -33,23 +33,14 @@ body {
 /* ---------- Container ---------- */
 
 .container {
-  padding: 20px 22px 18px;
+  padding: 24px 22px 18px;
 }
 
 .error-view {
   text-align: center;
 }
 
-/* ---------- Title ---------- */
 
-.title {
-  font-size: 13px;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  color: var(--text-dim);
-  text-transform: uppercase;
-  margin-bottom: 16px;
-}
 
 /* ---------- Volume Display ---------- */
 
@@ -59,7 +50,8 @@ body {
   text-align: center;
   color: var(--text);
   line-height: 1;
-  margin-bottom: 18px;
+  margin-top: 4px; /* 音量表示を少し下げる */
+  margin-bottom: 22px;
   font-variant-numeric: tabular-nums;
   transition: color 0.2s;
 }
