@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Simple Volume Control",
   "version": "1.0.0",
-  "description": "シンプルなUI でタブの音量を制御できる拡張機能",
+  "description": "A minimalist Chrome extension for controlling tab volume",
   "permissions": [
     "tabCapture",
     "offscreen",

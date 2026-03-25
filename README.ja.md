@@ -30,7 +30,7 @@
 ## 📸 スクリーンショット
 
 <p align="center">
-  <img src="スクリーンショット.png" alt="Simple Volume Control スクリーンショット" width="360">
+  <img src="screenshot.png" alt="Simple Volume Control スクリーンショット" width="360">
 </p>
 
 ## 🎯 こんなときに便利
@@ -109,4 +109,4 @@ Simple-Volume-Control/
 
 ## 📄 ライセンス
 
-[MIT License](LICENSE)
+MIT

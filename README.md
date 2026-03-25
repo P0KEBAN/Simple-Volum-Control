@@ -30,7 +30,7 @@
 ## 📸 Screenshot
 
 <p align="center">
-  <img src="スクリーンショット.png" alt="Simple Volume Control Screenshot" width="360">
+  <img src="screenshot.png" alt="Simple Volume Control Screenshot" width="360">
 </p>
 
 ## 🎯 Use Cases
@@ -109,4 +109,4 @@ Simple-Volume-Control/
 
 ## 📄 License
 
-[MIT License](LICENSE)
+MIT
