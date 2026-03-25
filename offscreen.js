@@ -5,24 +5,35 @@
 
 // tabId → { audioContext, gainNode, source, stream } のマップ
 const audioSessions = new Map();
+let pendingCaptures = 0;
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.target !== "offscreen") return;
 
   switch (message.type) {
     case "start-capture":
-      handleStartCapture(message);
-      break;
+      handleStartCapture(message)
+        .then((response) => sendResponse(response))
+        .catch((error) => {
+          sendResponse({
+            ok: false,
+            error: error.message || "Failed to start capture",
+          });
+        });
+      return true;
 
     case "set-volume":
       handleSetVolume(message);
       break;
 
-    // Service Worker からセッション存在確認を受ける
-    case "check-session": {
+    // Service Worker からセッション状態確認を受ける
+    case "get-session-state": {
       const tabId = message.tabId;
-      const exists = audioSessions.has(tabId);
-      sendResponse({ exists });
+      const session = audioSessions.get(tabId);
+      sendResponse({
+        exists: Boolean(session),
+        volume: session ? session.gainNode.gain.value : null,
+      });
       return true;
     }
 
@@ -30,7 +41,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     case "destroy-session": {
       const tabId = message.tabId;
       destroySession(tabId);
-      sendResponse({ ok: true });
+      sendResponse({
+        ok: true,
+        remainingSessions: audioSessions.size,
+        isIdle: audioSessions.size === 0 && pendingCaptures === 0,
+      });
       return true;
     }
   }
@@ -45,8 +60,10 @@ async function handleStartCapture(message) {
   if (audioSessions.has(tabId)) {
     const session = audioSessions.get(tabId);
     session.gainNode.gain.value = volume;
-    return;
+    return { ok: true, volume: session.gainNode.gain.value };
   }
+
+  pendingCaptures += 1;
 
   try {
     const stream = await navigator.mediaDevices.getUserMedia({
@@ -58,18 +75,25 @@ async function handleStartCapture(message) {
       },
     });
 
-    const audioContext = new AudioContext();
-    const source = audioContext.createMediaStreamSource(stream);
-    const gainNode = audioContext.createGain();
+    try {
+      const audioContext = new AudioContext();
+      const source = audioContext.createMediaStreamSource(stream);
+      const gainNode = audioContext.createGain();
 
-    gainNode.gain.value = volume;
+      gainNode.gain.value = volume;
 
-    source.connect(gainNode);
-    gainNode.connect(audioContext.destination);
+      source.connect(gainNode);
+      gainNode.connect(audioContext.destination);
 
-    audioSessions.set(tabId, { audioContext, gainNode, source, stream });
-  } catch (e) {
-    console.error("offscreen: capture failed", e);
+      audioSessions.set(tabId, { audioContext, gainNode, source, stream });
+
+      return { ok: true, volume: gainNode.gain.value };
+    } catch (e) {
+      stream.getTracks().forEach((track) => track.stop());
+      throw e;
+    }
+  } finally {
+    pendingCaptures -= 1;
   }
 }
 

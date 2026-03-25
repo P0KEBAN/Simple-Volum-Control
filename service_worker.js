@@ -11,11 +11,15 @@ const activeSessions = new Map();
 
 const OFFSCREEN_URL = "offscreen.html";
 
-async function ensureOffscreen() {
-  const contexts = await chrome.runtime.getContexts({
+async function getOffscreenContexts() {
+  return chrome.runtime.getContexts({
     contextTypes: ["OFFSCREEN_DOCUMENT"],
     documentUrls: [chrome.runtime.getURL(OFFSCREEN_URL)],
   });
+}
+
+async function ensureOffscreen() {
+  const contexts = await getOffscreenContexts();
   if (contexts.length === 0) {
     await chrome.offscreen.createDocument({
       url: OFFSCREEN_URL,
@@ -27,32 +31,75 @@ async function ensureOffscreen() {
 
 // ---------- offscreen 側のセッション確認 ----------
 
-async function checkOffscreenSession(tabId) {
-  try {
+async function sendMessageToOffscreen(message, { createIfMissing = true } = {}) {
+  let contexts;
+
+  if (createIfMissing) {
     await ensureOffscreen();
-    const response = await chrome.runtime.sendMessage({
-      type: "check-session",
-      target: "offscreen",
-      tabId,
-    });
-    return response?.exists || false;
+    contexts = await getOffscreenContexts();
+  } else {
+    contexts = await getOffscreenContexts();
+  }
+
+  if (contexts.length === 0) {
+    return null;
+  }
+
+  return chrome.runtime.sendMessage({
+    ...message,
+    target: "offscreen",
+  });
+}
+
+async function getOffscreenSessionState(tabId) {
+  try {
+    const response = await sendMessageToOffscreen(
+      {
+        type: "get-session-state",
+        tabId,
+      },
+      { createIfMissing: false }
+    );
+
+    return {
+      exists: response?.exists || false,
+      volume: response?.volume ?? 1.0,
+    };
   } catch {
-    return false;
+    return {
+      exists: false,
+      volume: 1.0,
+    };
   }
 }
 
 // ---------- offscreen 側のセッション破棄 ----------
 
+async function closeOffscreenDocument() {
+  const contexts = await getOffscreenContexts();
+  if (contexts.length > 0) {
+    await chrome.offscreen.closeDocument();
+  }
+}
+
 async function destroyOffscreenSession(tabId) {
   try {
-    await ensureOffscreen();
-    await chrome.runtime.sendMessage({
-      type: "destroy-session",
-      target: "offscreen",
-      tabId,
-    });
+    const response = await sendMessageToOffscreen(
+      {
+        type: "destroy-session",
+        tabId,
+      },
+      { createIfMissing: false }
+    );
+
+    if (response?.isIdle) {
+      await closeOffscreenDocument();
+    }
+
+    return response;
   } catch {
     // offscreen が存在しない場合は無視
+    return null;
   }
 }
 
@@ -70,11 +117,11 @@ async function startCapture(tabId) {
 
   // ── ケース2: service worker にはないが offscreen 側にセッションが残っている
   //     (service worker 再起動後などに発生)
-  const offscreenHasSession = await checkOffscreenSession(tabId);
-  if (offscreenHasSession) {
+  const offscreenSession = await getOffscreenSessionState(tabId);
+  if (offscreenSession.exists) {
     // offscreen 側のセッションを再利用
-    activeSessions.set(tabId, { volume });
-    return { volume };
+    activeSessions.set(tabId, { volume: offscreenSession.volume });
+    return { volume: offscreenSession.volume };
   }
 
   // ── ケース3: 完全に新規キャプチャ ──
@@ -111,18 +158,21 @@ async function startCapture(tabId) {
     }
   }
 
-  await chrome.runtime.sendMessage({
+  const response = await sendMessageToOffscreen({
     type: "start-capture",
-    target: "offscreen",
     streamId,
     tabId,
     volume,
   });
 
-  // セッション登録
-  activeSessions.set(tabId, { volume });
+  if (!response?.ok) {
+    throw new Error(response?.error || "Failed to initialize offscreen audio");
+  }
 
-  return { volume };
+  // セッション登録
+  activeSessions.set(tabId, { volume: response.volume });
+
+  return { volume: response.volume };
 }
 
 // ---------- メッセージハンドラ ----------

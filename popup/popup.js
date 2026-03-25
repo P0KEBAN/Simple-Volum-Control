@@ -15,6 +15,8 @@ let currentTabId = null;
 // ---------- 初期化 ----------
 
 document.addEventListener("DOMContentLoaded", async () => {
+  setControlsEnabled(false);
+
   try {
     const [tab] = await chrome.tabs.query({
       active: true,
@@ -43,6 +45,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     const volumePercent = Math.round(response.volume * 100);
     setSlider(volumePercent);
     updateDisplay(volumePercent);
+    setControlsEnabled(true);
   } catch (e) {
     console.error("popup init error:", e);
     showError("初期化に失敗しました");
@@ -103,7 +106,13 @@ function updateSliderTrack(percent) {
 }
 
 function showError(msg) {
+  setControlsEnabled(false);
   mainView.style.display = "none";
   errorView.style.display = "block";
   errorMsg.textContent = msg;
+}
+
+function setControlsEnabled(enabled) {
+  slider.disabled = !enabled;
+  resetBtn.disabled = !enabled;
 }
