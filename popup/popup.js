@@ -10,6 +10,10 @@ const mainView = document.getElementById("main-view");
 const errorView = document.getElementById("error-view");
 const errorMsg = document.getElementById("error-msg");
 
+const VOLUME_STEP = 5;
+const MIN_VOLUME_PERCENT = 0;
+const MAX_VOLUME_PERCENT = 600;
+
 let currentTabId = null;
 
 // ---------- 初期化 ----------
@@ -42,7 +46,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       return;
     }
 
-    const volumePercent = Math.round(response.volume * 100);
+    const volumePercent = normalizeVolumePercent(response.volume * 100);
     setSlider(volumePercent);
     updateDisplay(volumePercent);
     setControlsEnabled(true);
@@ -55,7 +59,8 @@ document.addEventListener("DOMContentLoaded", async () => {
 // ---------- スライダー ----------
 
 slider.addEventListener("input", () => {
-  const percent = parseInt(slider.value, 10);
+  const percent = normalizeVolumePercent(slider.value);
+  setSlider(percent);
   updateDisplay(percent);
   sendVolume(percent / 100);
 });
@@ -83,26 +88,41 @@ function sendVolume(volume) {
 }
 
 function setSlider(percent) {
-  slider.value = percent;
-  updateSliderTrack(percent);
+  const normalizedPercent = normalizeVolumePercent(percent);
+  slider.value = normalizedPercent;
+  updateSliderTrack(normalizedPercent);
 }
 
 function updateDisplay(percent) {
-  display.textContent = `${percent}%`;
+  const normalizedPercent = normalizeVolumePercent(percent);
+  display.textContent = `${normalizedPercent}%`;
 
-  if (percent > 100) {
+  if (normalizedPercent > 100) {
     display.classList.add("boosted");
   } else {
     display.classList.remove("boosted");
   }
 
-  updateSliderTrack(percent);
+  updateSliderTrack(normalizedPercent);
 }
 
 function updateSliderTrack(percent) {
   const ratio = percent / 600;
   const color = `linear-gradient(to right, var(--accent) 0%, var(--accent) ${ratio * 100}%, var(--surface) ${ratio * 100}%, var(--surface) 100%)`;
   slider.style.background = color;
+}
+
+function normalizeVolumePercent(value) {
+  const numericValue = Number(value);
+  if (!Number.isFinite(numericValue)) {
+    return 100;
+  }
+
+  const steppedValue = Math.round(numericValue / VOLUME_STEP) * VOLUME_STEP;
+  return Math.min(
+    MAX_VOLUME_PERCENT,
+    Math.max(MIN_VOLUME_PERCENT, steppedValue)
+  );
 }
 
 function showError(msg) {
