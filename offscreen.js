@@ -7,6 +7,10 @@
 const audioSessions = new Map();
 let pendingCaptures = 0;
 
+const DEFAULT_VOLUME = 1.0;
+const MIN_VOLUME = 0;
+const MAX_VOLUME = 6;
+
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.target !== "offscreen") return;
 
@@ -23,8 +27,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       return true;
 
     case "set-volume":
-      handleSetVolume(message);
-      break;
+      sendResponse(handleSetVolume(message));
+      return true;
 
     // Service Worker からセッション状態確認を受ける
     case "get-session-state": {
@@ -54,7 +58,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 // ---------- キャプチャ開始 ----------
 
 async function handleStartCapture(message) {
-  const { streamId, tabId, volume } = message;
+  const { streamId, tabId } = message;
+  const volume = normalizeVolume(message.volume);
 
   // 既存セッションがあれば音量だけ更新
   if (audioSessions.has(tabId)) {
@@ -86,6 +91,15 @@ async function handleStartCapture(message) {
       gainNode.connect(audioContext.destination);
 
       audioSessions.set(tabId, { audioContext, gainNode, source, stream });
+      stream.getTracks().forEach((track) => {
+        track.addEventListener(
+          "ended",
+          () => {
+            destroySession(tabId, { notifyServiceWorker: true });
+          },
+          { once: true }
+        );
+      });
 
       return { ok: true, volume: gainNode.gain.value };
     } catch (e) {
@@ -102,25 +116,63 @@ async function handleStartCapture(message) {
 function handleSetVolume(message) {
   const { tabId, volume } = message;
   const session = audioSessions.get(tabId);
-  if (session) {
-    session.gainNode.gain.value = volume;
+  if (!session) {
+    return {
+      ok: false,
+      error: "No active audio session",
+    };
   }
+
+  session.gainNode.gain.value = normalizeVolume(volume);
+
+  return {
+    ok: true,
+    volume: session.gainNode.gain.value,
+  };
 }
 
 // ---------- セッション破棄 ----------
 
-function destroySession(tabId) {
+function destroySession(tabId, { notifyServiceWorker = false } = {}) {
   const session = audioSessions.get(tabId);
-  if (session) {
-    try {
-      session.source.disconnect();
-      session.gainNode.disconnect();
-      session.audioContext.close();
-      // MediaStream のトラックも停止
-      session.stream.getTracks().forEach((track) => track.stop());
-    } catch (e) {
-      console.warn("offscreen: destroy session error", e);
-    }
-    audioSessions.delete(tabId);
+  if (!session) {
+    return;
   }
+
+  try {
+    session.source.disconnect();
+    session.gainNode.disconnect();
+    session.audioContext.close();
+    // MediaStream のトラックも停止
+    session.stream.getTracks().forEach((track) => track.stop());
+  } catch (e) {
+    console.warn("offscreen: destroy session error", e);
+  }
+
+  audioSessions.delete(tabId);
+
+  if (notifyServiceWorker) {
+    notifySessionEnded(tabId);
+  }
+}
+
+function notifySessionEnded(tabId) {
+  chrome.runtime
+    .sendMessage({
+      type: "session-ended",
+      tabId,
+      isIdle: audioSessions.size === 0 && pendingCaptures === 0,
+    })
+    .catch(() => {
+      // service worker が停止中でも次回 popup 初期化時に状態を再同期する
+    });
+}
+
+function normalizeVolume(volume) {
+  const numericVolume = Number(volume);
+  if (!Number.isFinite(numericVolume)) {
+    return DEFAULT_VOLUME;
+  }
+
+  return Math.min(MAX_VOLUME, Math.max(MIN_VOLUME, numericVolume));
 }

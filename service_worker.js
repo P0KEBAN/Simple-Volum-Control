@@ -10,6 +10,11 @@ const activeSessions = new Map();
 // ---------- offscreen document 管理 ----------
 
 const OFFSCREEN_URL = "offscreen.html";
+const DEFAULT_VOLUME = 1.0;
+const MIN_VOLUME = 0;
+const MAX_VOLUME = 6;
+
+let creatingOffscreen = null;
 
 async function getOffscreenContexts() {
   return chrome.runtime.getContexts({
@@ -21,11 +26,19 @@ async function getOffscreenContexts() {
 async function ensureOffscreen() {
   const contexts = await getOffscreenContexts();
   if (contexts.length === 0) {
-    await chrome.offscreen.createDocument({
-      url: OFFSCREEN_URL,
-      reasons: ["USER_MEDIA"],
-      justification: "Tab audio capture and volume control via Web Audio API",
-    });
+    if (!creatingOffscreen) {
+      creatingOffscreen = chrome.offscreen
+        .createDocument({
+          url: OFFSCREEN_URL,
+          reasons: ["USER_MEDIA"],
+          justification: "Tab audio capture and volume control via Web Audio API",
+        })
+        .finally(() => {
+          creatingOffscreen = null;
+        });
+    }
+
+    await creatingOffscreen;
   }
 }
 
@@ -76,10 +89,23 @@ async function getOffscreenSessionState(tabId) {
 // ---------- offscreen 側のセッション破棄 ----------
 
 async function closeOffscreenDocument() {
+  if (creatingOffscreen) {
+    await creatingOffscreen;
+  }
+
   const contexts = await getOffscreenContexts();
   if (contexts.length > 0) {
     await chrome.offscreen.closeDocument();
   }
+}
+
+function normalizeVolume(volume) {
+  const numericVolume = Number(volume);
+  if (!Number.isFinite(numericVolume)) {
+    return DEFAULT_VOLUME;
+  }
+
+  return Math.min(MAX_VOLUME, Math.max(MIN_VOLUME, numericVolume));
 }
 
 async function destroyOffscreenSession(tabId) {
@@ -107,12 +133,20 @@ async function destroyOffscreenSession(tabId) {
 
 async function startCapture(tabId) {
   // セッションのデフォルト音量
-  let volume = 1.0;
+  let volume = DEFAULT_VOLUME;
 
   // ── ケース1: service worker 側にセッション情報あり → 既存利用 ──
   if (activeSessions.has(tabId)) {
     const session = activeSessions.get(tabId);
-    return { volume: session.volume };
+    const offscreenSession = await getOffscreenSessionState(tabId);
+
+    if (offscreenSession.exists) {
+      session.volume = offscreenSession.volume;
+      return { volume: offscreenSession.volume };
+    }
+
+    // service worker 側だけに残った stale な状態は捨てて新規作成する
+    activeSessions.delete(tabId);
   }
 
   // ── ケース2: service worker にはないが offscreen 側にセッションが残っている
@@ -187,36 +221,20 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     }
 
     case "set-volume": {
-      // offscreen に転送
-      chrome.runtime.sendMessage({
-        type: "set-volume",
-        target: "offscreen",
-        tabId: message.tabId,
-        volume: message.volume,
-      });
-
-      // セッション状態を更新
-      if (activeSessions.has(message.tabId)) {
-        activeSessions.get(message.tabId).volume = message.volume;
-      }
-
-      sendResponse({ ok: true });
-      return false;
+      handleSetVolume(message).then(sendResponse);
+      return true; // async
     }
 
     case "reset": {
-      chrome.runtime.sendMessage({
-        type: "set-volume",
-        target: "offscreen",
-        tabId: message.tabId,
-        volume: 1.0,
-      });
+      handleSetVolume({
+        ...message,
+        volume: DEFAULT_VOLUME,
+      }).then(sendResponse);
+      return true; // async
+    }
 
-      // セッション状態を更新
-      if (activeSessions.has(message.tabId)) {
-        activeSessions.get(message.tabId).volume = 1.0;
-      }
-
+    case "session-ended": {
+      handleSessionEnded(message);
       sendResponse({ ok: true });
       return false;
     }
@@ -245,5 +263,54 @@ async function handleInitPopup(message) {
   } catch (e) {
     console.error("startCapture failed:", e);
     return { ok: false, error: e.message };
+  }
+}
+
+async function handleSetVolume(message) {
+  const tabId = message.tabId;
+  const volume = normalizeVolume(message.volume);
+
+  try {
+    const response = await sendMessageToOffscreen(
+      {
+        type: "set-volume",
+        tabId,
+        volume,
+      },
+      { createIfMissing: false }
+    );
+
+    if (!response?.ok) {
+      return {
+        ok: false,
+        error: response?.error || "No active audio session",
+      };
+    }
+
+    if (activeSessions.has(tabId)) {
+      activeSessions.get(tabId).volume = response.volume;
+    }
+
+    return {
+      ok: true,
+      volume: response.volume,
+    };
+  } catch (e) {
+    return {
+      ok: false,
+      error: e.message || "Failed to update volume",
+    };
+  }
+}
+
+async function handleSessionEnded(message) {
+  activeSessions.delete(message.tabId);
+
+  if (message.isIdle) {
+    try {
+      await closeOffscreenDocument();
+    } catch (e) {
+      console.warn("session-ended: failed to close offscreen document", e);
+    }
   }
 }

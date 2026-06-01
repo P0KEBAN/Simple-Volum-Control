@@ -67,24 +67,42 @@ slider.addEventListener("input", () => {
 
 // ---------- Reset ----------
 
-resetBtn.addEventListener("click", () => {
+resetBtn.addEventListener("click", async () => {
   setSlider(100);
   updateDisplay(100);
 
-  chrome.runtime.sendMessage({
-    type: "reset",
-    tabId: currentTabId,
-  });
+  try {
+    const response = await chrome.runtime.sendMessage({
+      type: "reset",
+      tabId: currentTabId,
+    });
+
+    if (!response?.ok) {
+      showError(response?.error || "音量をリセットできませんでした");
+    }
+  } catch (e) {
+    console.error("reset volume error:", e);
+    showError("音量をリセットできませんでした");
+  }
 });
 
 // ---------- ヘルパー ----------
 
-function sendVolume(volume) {
-  chrome.runtime.sendMessage({
-    type: "set-volume",
-    tabId: currentTabId,
-    volume,
-  });
+async function sendVolume(volume) {
+  try {
+    const response = await chrome.runtime.sendMessage({
+      type: "set-volume",
+      tabId: currentTabId,
+      volume,
+    });
+
+    if (!response?.ok) {
+      showError(response?.error || "音量を変更できませんでした");
+    }
+  } catch (e) {
+    console.error("set volume error:", e);
+    showError("音量を変更できませんでした");
+  }
 }
 
 function setSlider(percent) {
