@@ -1,17 +1,17 @@
 /* ============================================================
    Simple Volume Control — Popup Stylesheet
-   ダークテーマ / ミニマル / 視認性重視
+   ダークテーマ / モノクロ / ミニマル / 視認性重視
    ============================================================ */
 
 :root {
-  --bg: #1a1a2e;
-  --surface: #22223a;
-  --text: #e8e8f0;
-  --text-dim: #8888a0;
-  --accent: #7c5cfc;
-  --accent-glow: rgba(124, 92, 252, 0.35);
-  --accent-hover: #9b7eff;
-  --danger: #ff6b8a;
+  --bg: #1a1a1a;
+  --surface: #2a2a2a;
+  --text: #f0f0f0;
+  --text-dim: #888888;
+  --accent: #f0f0f0;
+  --accent-glow: rgba(255, 255, 255, 0.25);
+  --accent-hover: #ffffff;
+  --danger: #cfcfcf;
   --radius: 12px;
   --radius-sm: 8px;
 }
@@ -157,7 +157,7 @@ input[type="range"]::-webkit-slider-thumb:active {
 }
 
 .btn-reset:hover {
-  background: #2d2d48;
+  background: #383838;
 }
 
 /* ---------- Error ---------- */
