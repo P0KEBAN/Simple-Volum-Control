@@ -87,6 +87,15 @@ Simple-Volume-Control/
 4. Click **Load unpacked**
 5. Select the cloned folder
 
+## 🧪 Tests
+
+The isolated unit tests use only the Node.js standard library. They mock Chrome
+and Web Audio APIs, so they do not capture real tabs or access browser profiles.
+
+```bash
+node --test
+```
+
 ## 💡 Usage
 
 1. Click the extension icon on a tab playing audio
