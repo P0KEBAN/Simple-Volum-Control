@@ -143,6 +143,33 @@ test("popup exposes runtime errors through the alert view", async () => {
   const environment = createPopupEnvironment({
     sendMessage: async () => ({ ok: false, error: "操作できません" }),
   });
+  const events = [];
+  const errorMsg = environment.elements["error-msg"];
+  let errorText = "このタブでは音量制御を開始できません";
+  Object.defineProperty(errorMsg, "textContent", {
+    configurable: true,
+    get: () => errorText,
+    set: (value) => {
+      errorText = String(value);
+      events.push({ type: "text", value: errorText });
+    },
+  });
+
+  const errorView = environment.elements["error-view"];
+  let errorDisplay = "none";
+  errorView.style = {};
+  Object.defineProperty(errorView.style, "display", {
+    configurable: true,
+    get: () => errorDisplay,
+    set: (value) => {
+      errorDisplay = String(value);
+      events.push({
+        type: "display",
+        value: errorDisplay,
+        textAtDisplay: errorText,
+      });
+    },
+  });
   loadExtensionScript("popup/popup.js", {
     chrome: environment.chrome,
     document: environment.document,
@@ -153,4 +180,8 @@ test("popup exposes runtime errors through the alert view", async () => {
   assert.equal(environment.elements["main-view"].style.display, "none");
   assert.equal(environment.elements["error-view"].style.display, "block");
   assert.equal(environment.elements["error-msg"].textContent, "操作できません");
+  assert.deepEqual(events, [
+    { type: "text", value: "操作できません" },
+    { type: "display", value: "block", textAtDisplay: "操作できません" },
+  ]);
 });

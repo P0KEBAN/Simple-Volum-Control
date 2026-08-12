@@ -148,8 +148,8 @@ function normalizeVolumePercent(value) {
 function showError(msg) {
   setControlsEnabled(false);
   mainView.style.display = "none";
-  errorView.style.display = "block";
   errorMsg.textContent = msg;
+  errorView.style.display = "block";
 }
 
 function setControlsEnabled(enabled) {
