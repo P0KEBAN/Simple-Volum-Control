@@ -21,10 +21,15 @@
       <input
         type="range"
         id="volume-slider"
+        aria-label="音量"
         min="0"
         max="600"
         value="100"
         step="5"
+        aria-valuemin="0"
+        aria-valuemax="600"
+        aria-valuenow="100"
+        aria-valuetext="100%"
       >
     </div>
 
@@ -33,7 +38,14 @@
     </div>
   </div>
 
-  <div class="container error-view" id="error-view" style="display:none;">
+  <div
+    class="container error-view"
+    id="error-view"
+    role="alert"
+    aria-live="assertive"
+    aria-atomic="true"
+    style="display:none;"
+  >
 
     <p class="error-msg" id="error-msg">このタブでは音量制御を開始できません</p>
   </div>

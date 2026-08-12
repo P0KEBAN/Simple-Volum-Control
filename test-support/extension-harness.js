@@ -151,7 +151,9 @@ function createClassList() {
 
 function createElement(initial = {}) {
   const listeners = new Map();
+  const attributes = new Map();
   return {
+    attributes,
     classList: createClassList(),
     disabled: false,
     style: {},
@@ -160,6 +162,12 @@ function createElement(initial = {}) {
     ...initial,
     addEventListener(type, listener) {
       listeners.set(type, listener);
+    },
+    getAttribute(name) {
+      return attributes.has(name) ? attributes.get(name) : null;
+    },
+    setAttribute(name, value) {
+      attributes.set(name, String(value));
     },
     dispatch(type) {
       const listener = listeners.get(type);

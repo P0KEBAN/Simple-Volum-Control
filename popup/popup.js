@@ -108,6 +108,8 @@ async function sendVolume(volume) {
 function setSlider(percent) {
   const normalizedPercent = normalizeVolumePercent(percent);
   slider.value = normalizedPercent;
+  slider.setAttribute("aria-valuenow", String(normalizedPercent));
+  slider.setAttribute("aria-valuetext", `${normalizedPercent}%`);
   updateSliderTrack(normalizedPercent);
 }
 
