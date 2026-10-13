@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  <strong>A minimalist Chrome extension for controlling tab volume</strong>
+  <strong>タブの音量をシンプルに制御する Chrome 拡張機能</strong>
 </p>
 
 <p align="center">
@@ -15,121 +15,122 @@
 </p>
 
 <p align="center">
-  <a href="README.ja.md">🇯🇵 日本語</a>
+  <strong>日本語</strong> | <a href="README.en.md">English</a>
 </p>
 
 ---
 
-## ✨ Features
+## ✨ 特徴
 
-- **Minimal UI** — Just a volume slider and a reset button
-- **0% – 600% volume range** — Boost or reduce with a single slider
-- **Tab-level audio control** — Powered by `tabCapture` + Web Audio API, independent of site implementation
-- **Dark theme** — Clean and easy on the eyes
+- **シンプルな UI** — 音量スライダーとリセットボタンだけのミニマルデザイン
+- **0% 〜 600% の音量制御** — ブースト / 減衰をワンスライダーで
+- **タブ音声全体を制御** — `tabCapture` + Web Audio API により、サイト実装に依存しない安定した制御
+- **ダークテーマ** — 見やすく洗練された UI
 
-## 📸 Screenshot
+## 📸 スクリーンショット
 
 <p align="center">
-  <img src="screenshot.png" alt="Simple Volume Control Screenshot" width="360">
+  <img src="screenshot.png" alt="Simple Volume Control スクリーンショット" width="360">
 </p>
 
-## 🎯 Use Cases
+## 🎯 こんなときに便利
 
-- Normalize volume differences between YouTube videos
-- Boost audio on quiet websites
-- Replace over-complicated volume extensions with something simple
+- YouTube の動画ごとの音量差が気になる
+- 音が小さいサイトの音声をブーストしたい
+- 既存の音量拡張が多機能すぎて使いにくい
 
-## 🛠 Architecture
+## 🛠 技術構成
 
 ```
 popup (UI)
-  ↓ message
+  ↓ メッセージ送信
 service_worker
-  ↓ stream ID / state management
+  ↓ stream ID 発行 / 状態管理
 offscreen document
   ↓
 Web Audio API (GainNode → AudioDestination)
 ```
 
-| Technology | Purpose |
+| 技術 | 用途 |
 |---|---|
-| Manifest V3 | Chrome extension framework |
-| tabCapture API | Capture tab audio stream |
-| Offscreen Document | Background audio processing |
-| Web Audio API (GainNode) | Volume gain control |
+| Manifest V3 | Chrome 拡張の基盤 |
+| tabCapture API | タブ音声のキャプチャ |
+| Offscreen Document | バックグラウンドでの音声処理 |
+| Web Audio API (GainNode) | 音量の倍率制御 |
 
-## 📁 Project Structure
+## 📁 ファイル構成
 
 ```
 Simple-Volum-Control/
-├── manifest.json          # Extension configuration
-├── service_worker.js      # Background logic & tab management
+├── manifest.json          # 拡張機能の設定
+├── service_worker.js      # バックグラウンド処理・タブ管理
 ├── offscreen.html         # Offscreen Document (HTML)
-├── offscreen.js           # Audio processing (Web Audio API)
+├── offscreen.js           # 音声処理 (Web Audio API)
 ├── popup/
-│   ├── popup.html         # Popup UI
-│   ├── popup.css          # Styles (dark theme)
-│   └── popup.js           # UI logic
+│   ├── popup.html         # ポップアップ UI
+│   ├── popup.css          # スタイル (ダークテーマ)
+│   └── popup.js           # UI ロジック
 └── icons/
     ├── icon16.png
     ├── icon48.png
     └── icon128.png
 ```
 
-## 🚀 Installation
+## 🚀 インストール方法
 
-1. Clone or download this repository
+1. このリポジトリをクローンまたはダウンロード
    ```bash
    git clone https://github.com/P0KEBAN/Simple-Volum-Control.git
    ```
-2. Open `chrome://extensions/` in Chrome
-3. Enable **Developer mode** (top right)
-4. Click **Load unpacked**
-5. Select the cloned folder
+2. Chrome で `chrome://extensions/` を開く
+3. 右上の **「デベロッパー モード」** を有効にする
+4. **「パッケージ化されていない拡張機能を読み込む」** をクリック
+5. クローンしたフォルダを選択
 
-## 🧪 Tests
+## 🧪 テスト
 
-The isolated unit tests use only the Node.js standard library. They mock Chrome
-and Web Audio APIs, so they do not capture real tabs or access browser profiles.
+分離されたユニットテストは Node.js の標準機能だけを使用します。Chrome API と
+Web Audio API はモック化されるため、実タブのキャプチャやブラウザプロファイルへの
+アクセスは行いません。
 
 ```bash
 node --test
 ```
 
-## 💡 Usage
+## 💡 使い方
 
-1. Click the extension icon on a tab playing audio
-2. Adjust the slider (0% – 600%)
-3. Click `Reset` to return to 100%
+1. 音声再生中のタブで拡張アイコンをクリック
+2. スライダーで音量を調整（0% 〜 600%）
+3. `Reset` ボタンで 100% に戻す
 
-### ⌨️ Keyboard
+### ⌨️ キーボード操作
 
-| Key | Action |
+| キー | 動作 |
 |---|---|
-| `Alt` + `Shift` + `V` (Mac: `Option` + `Shift` + `V`) | Open the popup |
-| `←` `→` `↑` `↓` | Adjust volume by 5% |
-| `Shift` + arrow | Adjust volume by 25% |
-| `0` – `6` | Jump to 0% – 600% (`0` mutes, `1` is 100%) |
-| `R` | Reset to 100% |
-| `Esc` | Close the popup |
+| `Alt` + `Shift` + `V`（Mac: `Option` + `Shift` + `V`） | ポップアップを開く |
+| `←` `→` `↑` `↓` | 音量を 5% ずつ調整 |
+| `Shift` + 矢印 | 音量を 25% ずつ調整 |
+| `0` 〜 `6` | 0% 〜 600% に直接設定（`0` はミュート、`1` は 100%） |
+| `R` | 100% にリセット |
+| `Esc` | ポップアップを閉じる |
 
-You can change the popup shortcut at `chrome://extensions/shortcuts`. If another extension already
-uses the same keys, Chrome does not assign it automatically; set it from that page.
+ポップアップを開くキーは `chrome://extensions/shortcuts` で変更できます。他の拡張機能が同じキーを
+使っている場合は自動では割り当てられないため、同じ画面から設定してください。
 
-## ⚠️ Notes
+## ⚠️ 注意事項
 
-- Some tabs (e.g. `chrome://` pages) do not support audio capture
-- Extreme volume boost may cause audio clipping
-- Volume settings are session-only (reset when the tab is closed)
+- 一部のタブ（`chrome://` ページなど）では音量制御を開始できません
+- 音量を大幅にブーストすると音割れが発生する場合があります
+- 音量設定はセッション内のみ有効です（タブを閉じるとリセットされます）
 
-## 🔧 Permissions
+## 🔧 必要な権限
 
-| Permission | Reason |
+| 権限 | 理由 |
 |---|---|
-| `tabCapture` | Capture the audio stream of a tab |
-| `offscreen` | Process audio in the background |
-| `activeTab` | Access the current tab info |
+| `tabCapture` | タブの音声ストリームを取得するため |
+| `offscreen` | バックグラウンドで音声処理を行うため |
+| `activeTab` | 現在のタブ情報にアクセスするため |
 
-## 📄 License
+## 📄 ライセンス
 
 MIT
