@@ -41,6 +41,13 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       return true;
     }
 
+    // close 直前の再確認用。通知時点ではなく現在の状態を返す
+    case "get-idle-state":
+      sendResponse({
+        isIdle: audioSessions.size === 0 && pendingCaptures === 0,
+      });
+      return true;
+
     // セッション破棄リクエスト
     case "destroy-session": {
       const tabId = message.tabId;

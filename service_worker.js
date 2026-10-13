@@ -16,6 +16,18 @@ const MAX_VOLUME = 6;
 
 let creatingOffscreen = null;
 
+// ---------- 排他制御 ----------
+// キャプチャ開始・セッション破棄・offscreen document の close を直列化する。
+// 「idle を確認してから close するまで」の間に別の開始処理が割り込むと、
+// 始まったばかりのセッションごと document を閉じてしまうため。
+let lifecycleTail = Promise.resolve();
+
+function runExclusive(task) {
+  const run = lifecycleTail.then(task);
+  lifecycleTail = run.catch(() => {});
+  return run;
+}
+
 async function getOffscreenContexts() {
   return chrome.runtime.getContexts({
     contextTypes: ["OFFSCREEN_DOCUMENT"],
@@ -118,10 +130,6 @@ async function destroyOffscreenSession(tabId) {
       { createIfMissing: false }
     );
 
-    if (response?.isIdle) {
-      await closeOffscreenDocument();
-    }
-
     return response;
   } catch {
     // offscreen が存在しない場合は無視
@@ -129,9 +137,43 @@ async function destroyOffscreenSession(tabId) {
   }
 }
 
+// 通知や応答に含まれる isIdle は「作られた時点」の状態でしかないため、
+// close の直前に offscreen へ問い合わせ直す。runExclusive 内から呼ぶこと。
+async function closeOffscreenIfIdle() {
+  try {
+    const response = await sendMessageToOffscreen(
+      { type: "get-idle-state" },
+      { createIfMissing: false }
+    );
+
+    if (response?.isIdle) {
+      await closeOffscreenDocument();
+    }
+  } catch (e) {
+    // 状態を確認できないときは閉じない（セッションを巻き込まない側に倒す）
+    console.warn("closeOffscreenIfIdle: failed", e);
+  }
+}
+
 // ---------- tabCapture → offscreen ----------
 
-async function startCapture(tabId) {
+// 同じタブの開始処理が重なった場合は進行中の1件を共有する
+const startFlights = new Map();
+
+function startCapture(tabId) {
+  let flight = startFlights.get(tabId);
+
+  if (!flight) {
+    flight = runExclusive(() => captureTab(tabId)).finally(() => {
+      startFlights.delete(tabId);
+    });
+    startFlights.set(tabId, flight);
+  }
+
+  return flight;
+}
+
+async function captureTab(tabId) {
   // セッションのデフォルト音量
   let volume = DEFAULT_VOLUME;
 
@@ -246,7 +288,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 chrome.tabs.onRemoved.addListener((tabId) => {
   activeSessions.delete(tabId);
   // offscreen のセッションも破棄
-  destroyOffscreenSession(tabId);
+  runExclusive(async () => {
+    await destroyOffscreenSession(tabId);
+    await closeOffscreenIfIdle();
+  });
 });
 
 // ---------- popup 初期化 ----------
@@ -307,10 +352,6 @@ async function handleSessionEnded(message) {
   activeSessions.delete(message.tabId);
 
   if (message.isIdle) {
-    try {
-      await closeOffscreenDocument();
-    } catch (e) {
-      console.warn("session-ended: failed to close offscreen document", e);
-    }
+    await runExclusive(closeOffscreenIfIdle);
   }
 }

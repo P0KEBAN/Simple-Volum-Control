@@ -86,3 +86,28 @@ test("offscreen reuses an existing session and exposes lifecycle state", async (
   });
   assert.equal(environment.calls.audioContexts[0].closed, true);
 });
+
+test("offscreen reports its current idle state", async () => {
+  const environment = createOffscreenEnvironment();
+  loadOffscreen(environment);
+  const getIdleState = () =>
+    environment.dispatch({ target: "offscreen", type: "get-idle-state" });
+
+  assert.deepEqual(await getIdleState(), { isIdle: true });
+
+  await environment.dispatch({
+    target: "offscreen",
+    type: "start-capture",
+    streamId: "stream-3",
+    tabId: 3,
+    volume: 1,
+  });
+  assert.deepEqual(await getIdleState(), { isIdle: false });
+
+  await environment.dispatch({
+    target: "offscreen",
+    type: "destroy-session",
+    tabId: 3,
+  });
+  assert.deepEqual(await getIdleState(), { isIdle: true });
+});
