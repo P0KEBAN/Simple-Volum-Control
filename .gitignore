@@ -39,5 +39,5 @@ logs
 *.crx
 *.pem
 
-# Project specific
-docs/
+# Project specific (internal docs: plans, reviews, AI handoff notes — never publish)
+private-docs/

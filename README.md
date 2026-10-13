@@ -61,7 +61,7 @@ Web Audio API (GainNode → AudioDestination)
 ## 📁 Project Structure
 
 ```
-Simple-Volume-Control/
+Simple-Volum-Control/
 ├── manifest.json          # Extension configuration
 ├── service_worker.js      # Background logic & tab management
 ├── offscreen.html         # Offscreen Document (HTML)
@@ -80,7 +80,7 @@ Simple-Volume-Control/
 
 1. Clone or download this repository
    ```bash
-   git clone https://github.com/P0KEBAN/Simple-Volume-Control.git
+   git clone https://github.com/P0KEBAN/Simple-Volum-Control.git
    ```
 2. Open `chrome://extensions/` in Chrome
 3. Enable **Developer mode** (top right)
