@@ -11,6 +11,7 @@ const errorView = document.getElementById("error-view");
 const errorMsg = document.getElementById("error-msg");
 
 const VOLUME_STEP = 5;
+const LARGE_VOLUME_STEP = 25;
 const MIN_VOLUME_PERCENT = 0;
 const MAX_VOLUME_PERCENT = 600;
 
@@ -50,6 +51,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     setSlider(volumePercent);
     updateDisplay(volumePercent);
     setControlsEnabled(true);
+    // 開いた直後からキーボードで操作できるようにする
+    slider.focus();
   } catch (e) {
     console.error("popup init error:", e);
     showError("初期化に失敗しました");
@@ -59,15 +62,56 @@ document.addEventListener("DOMContentLoaded", async () => {
 // ---------- スライダー ----------
 
 slider.addEventListener("input", () => {
-  const percent = normalizeVolumePercent(slider.value);
-  setSlider(percent);
-  updateDisplay(percent);
-  sendVolume(percent / 100);
+  applyVolumePercent(slider.value);
+});
+
+// ---------- キーボード ----------
+// 矢印: 5% / Shift+矢印: 25% / 0〜6: 0%〜600% / R: リセット
+// フォーカスがスライダーにない場合も同じ操作になるよう document で受ける
+
+const ARROW_DIRECTIONS = {
+  ArrowUp: 1,
+  ArrowRight: 1,
+  ArrowDown: -1,
+  ArrowLeft: -1,
+};
+
+document.addEventListener("keydown", (event) => {
+  if (slider.disabled || event.ctrlKey || event.metaKey || event.altKey) {
+    return;
+  }
+
+  const direction = ARROW_DIRECTIONS[event.key];
+  if (direction) {
+    const step = event.shiftKey ? LARGE_VOLUME_STEP : VOLUME_STEP;
+    event.preventDefault();
+    applyVolumePercent(Number(slider.value) + direction * step);
+    return;
+  }
+
+  if (event.shiftKey) {
+    return;
+  }
+
+  // IME 有効時も反応するよう、入力文字ではなく物理キーで判定する
+  const digit = /^(?:Digit|Numpad)([0-6])$/.exec(event.code)?.[1];
+  if (digit !== undefined) {
+    event.preventDefault();
+    applyVolumePercent(Number(digit) * 100);
+    return;
+  }
+
+  if (event.code === "KeyR") {
+    event.preventDefault();
+    resetVolume();
+  }
 });
 
 // ---------- Reset ----------
 
-resetBtn.addEventListener("click", async () => {
+resetBtn.addEventListener("click", resetVolume);
+
+async function resetVolume() {
   setSlider(100);
   updateDisplay(100);
 
@@ -84,9 +128,16 @@ resetBtn.addEventListener("click", async () => {
     console.error("reset volume error:", e);
     showError("音量をリセットできませんでした");
   }
-});
+}
 
 // ---------- ヘルパー ----------
+
+function applyVolumePercent(value) {
+  const percent = normalizeVolumePercent(value);
+  setSlider(percent);
+  updateDisplay(percent);
+  sendVolume(percent / 100);
+}
 
 async function sendVolume(volume) {
   try {

@@ -102,6 +102,20 @@ node --test
 2. Adjust the slider (0% – 600%)
 3. Click `Reset` to return to 100%
 
+### ⌨️ Keyboard
+
+| Key | Action |
+|---|---|
+| `Alt` + `Shift` + `V` (Mac: `Option` + `Shift` + `V`) | Open the popup |
+| `←` `→` `↑` `↓` | Adjust volume by 5% |
+| `Shift` + arrow | Adjust volume by 25% |
+| `0` – `6` | Jump to 0% – 600% (`0` mutes, `1` is 100%) |
+| `R` | Reset to 100% |
+| `Esc` | Close the popup |
+
+You can change the popup shortcut at `chrome://extensions/shortcuts`. If another extension already
+uses the same keys, Chrome does not assign it automatically; set it from that page.
+
 ## ⚠️ Notes
 
 - Some tabs (e.g. `chrome://` pages) do not support audio capture

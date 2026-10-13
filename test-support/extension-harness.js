@@ -156,12 +156,16 @@ function createElement(initial = {}) {
     attributes,
     classList: createClassList(),
     disabled: false,
+    focused: false,
     style: {},
     textContent: "",
     value: "",
     ...initial,
     addEventListener(type, listener) {
       listeners.set(type, listener);
+    },
+    focus() {
+      this.focused = !this.disabled;
     },
     getAttribute(name) {
       return attributes.has(name) ? attributes.get(name) : null;
@@ -228,12 +232,12 @@ function createPopupEnvironment(overrides = {}) {
     chrome,
     document,
     elements,
-    dispatchDocument(type) {
+    dispatchDocument(type, event) {
       const listener = documentListeners.get(type);
       if (!listener) {
         throw new Error(`document listener was not registered: ${type}`);
       }
-      return listener();
+      return listener(event);
     },
   };
 }

@@ -185,3 +185,125 @@ test("popup exposes runtime errors through the alert view", async () => {
     { type: "display", value: "block", textAtDisplay: "操作できません" },
   ]);
 });
+
+async function loadInitializedPopup(overrides) {
+  const environment = createPopupEnvironment(overrides);
+  loadExtensionScript("popup/popup.js", {
+    chrome: environment.chrome,
+    document: environment.document,
+  });
+  await environment.dispatchDocument("DOMContentLoaded");
+  return environment;
+}
+
+function pressKey(environment, event) {
+  const keyEvent = {
+    altKey: false,
+    code: "",
+    ctrlKey: false,
+    defaultPrevented: false,
+    key: "",
+    metaKey: false,
+    shiftKey: false,
+    preventDefault() {
+      this.defaultPrevented = true;
+    },
+    ...event,
+  };
+  environment.dispatchDocument("keydown", keyEvent);
+  return keyEvent;
+}
+
+test("manifest suggests a shortcut that opens the popup", () => {
+  const manifest = JSON.parse(
+    fs.readFileSync(path.join(__dirname, "../manifest.json"), "utf8")
+  );
+
+  assert.deepEqual(manifest.commands, {
+    _execute_action: { suggested_key: { default: "Alt+Shift+V" } },
+  });
+});
+
+test("popup focuses the slider once the controls are ready", async () => {
+  const environment = await loadInitializedPopup({
+    sendMessage: async () => ({ ok: true, volume: 1 }),
+  });
+
+  assert.equal(environment.elements["volume-slider"].focused, true);
+});
+
+test("popup does not focus the slider when initialization fails", async () => {
+  const environment = await loadInitializedPopup({
+    sendMessage: async () => ({ ok: false, error: "操作できません" }),
+  });
+
+  assert.equal(environment.elements["volume-slider"].focused, false);
+});
+
+test("popup keyboard shortcuts adjust, jump, and reset the volume", async () => {
+  const environment = await loadInitializedPopup({
+    sendMessage: async (message) => ({ ok: true, volume: message.volume ?? 1 }),
+  });
+  const slider = environment.elements["volume-slider"];
+  const lastMessage = () => environment.calls.sendMessage.at(-1);
+
+  const cases = [
+    [{ key: "ArrowRight" }, 105],
+    [{ key: "ArrowUp" }, 110],
+    [{ key: "ArrowLeft" }, 105],
+    [{ key: "ArrowDown" }, 100],
+    [{ key: "ArrowUp", shiftKey: true }, 125],
+    [{ key: "ArrowLeft", shiftKey: true }, 100],
+    [{ key: "3", code: "Digit3" }, 300],
+    [{ key: "6", code: "Numpad6" }, 600],
+    [{ key: "ArrowRight", shiftKey: true }, 600],
+    [{ key: "Process", code: "Digit0" }, 0],
+    [{ key: "ArrowDown" }, 0],
+  ];
+
+  for (const [event, expected] of cases) {
+    const keyEvent = pressKey(environment, event);
+
+    assert.equal(slider.value, expected, JSON.stringify(event));
+    assert.equal(slider.getAttribute("aria-valuetext"), `${expected}%`);
+    assert.equal(keyEvent.defaultPrevented, true);
+    assert.deepEqual(lastMessage(), {
+      type: "set-volume",
+      tabId: 123,
+      volume: expected / 100,
+    });
+  }
+
+  pressKey(environment, { key: "r", code: "KeyR" });
+  await flushAsync();
+
+  assert.equal(slider.value, 100);
+  assert.deepEqual(lastMessage(), { type: "reset", tabId: 123 });
+});
+
+test("popup ignores unrelated keys, modifier combinations, and disabled controls", async () => {
+  const environment = await loadInitializedPopup({
+    sendMessage: async () => ({ ok: true, volume: 1 }),
+  });
+  const slider = environment.elements["volume-slider"];
+  const sentBefore = environment.calls.sendMessage.length;
+
+  const ignored = [
+    { key: "7", code: "Digit7" },
+    { key: "#", code: "Digit3", shiftKey: true },
+    { key: "R", code: "KeyR", shiftKey: true },
+    { key: "r", code: "KeyR", metaKey: true },
+    { key: "ArrowUp", ctrlKey: true },
+    { key: "ArrowUp", altKey: true },
+    { key: "Tab", code: "Tab" },
+  ];
+  for (const event of ignored) {
+    assert.equal(pressKey(environment, event).defaultPrevented, false);
+  }
+
+  slider.disabled = true;
+  assert.equal(pressKey(environment, { key: "ArrowUp" }).defaultPrevented, false);
+
+  assert.equal(slider.value, 100);
+  assert.equal(environment.calls.sendMessage.length, sentBefore);
+});
