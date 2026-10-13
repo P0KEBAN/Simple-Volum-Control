@@ -12,6 +12,7 @@
   <img src="https://img.shields.io/badge/Manifest-V3-blue?style=flat-square" alt="Manifest V3">
   <img src="https://img.shields.io/badge/Chrome-Extension-4285F4?style=flat-square&logo=googlechrome&logoColor=white" alt="Chrome Extension">
   <img src="https://img.shields.io/badge/License-MIT-green?style=flat-square" alt="MIT License">
+  <a href="https://github.com/P0KEBAN/Simple-Volum-Control/releases/latest"><img src="https://img.shields.io/github/v/release/P0KEBAN/Simple-Volum-Control?style=flat-square" alt="Latest release"></a>
 </p>
 
 <p align="center">
@@ -78,14 +79,26 @@ Simple-Volum-Control/
 
 ## 🚀 Installation
 
-1. Clone or download this repository
-   ```bash
-   git clone https://github.com/P0KEBAN/Simple-Volum-Control.git
-   ```
+1. Download `simple-volume-control-vX.Y.Z.zip` from the Assets of the
+   [latest release](https://github.com/P0KEBAN/Simple-Volum-Control/releases/latest) and unzip it
 2. Open `chrome://extensions/` in Chrome
 3. Enable **Developer mode** (top right)
 4. Click **Load unpacked**
-5. Select the cloned folder
+5. Select the unzipped `simple-volume-control` folder
+
+Keep the loaded folder in place. To update, overwrite the same folder with the contents of the new ZIP
+and press the reload button for the extension in `chrome://extensions/`.
+
+<details>
+<summary>Using the source code</summary>
+
+```bash
+git clone https://github.com/P0KEBAN/Simple-Volum-Control.git
+```
+
+Load the cloned folder the same way as steps 2–5 above.
+
+</details>
 
 ## 🧪 Tests
 

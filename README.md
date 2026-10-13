@@ -12,6 +12,7 @@
   <img src="https://img.shields.io/badge/Manifest-V3-blue?style=flat-square" alt="Manifest V3">
   <img src="https://img.shields.io/badge/Chrome-Extension-4285F4?style=flat-square&logo=googlechrome&logoColor=white" alt="Chrome Extension">
   <img src="https://img.shields.io/badge/License-MIT-green?style=flat-square" alt="MIT License">
+  <a href="https://github.com/P0KEBAN/Simple-Volum-Control/releases/latest"><img src="https://img.shields.io/github/v/release/P0KEBAN/Simple-Volum-Control?style=flat-square" alt="Latest release"></a>
 </p>
 
 <p align="center">
@@ -78,14 +79,26 @@ Simple-Volum-Control/
 
 ## 🚀 インストール方法
 
-1. このリポジトリをクローンまたはダウンロード
-   ```bash
-   git clone https://github.com/P0KEBAN/Simple-Volum-Control.git
-   ```
+1. [最新のリリース](https://github.com/P0KEBAN/Simple-Volum-Control/releases/latest) の Assets から
+   `simple-volume-control-vX.Y.Z.zip` をダウンロードして解凍
 2. Chrome で `chrome://extensions/` を開く
 3. 右上の **「デベロッパー モード」** を有効にする
 4. **「パッケージ化されていない拡張機能を読み込む」** をクリック
-5. クローンしたフォルダを選択
+5. 解凍してできた `simple-volume-control` フォルダを選択
+
+読み込んだあともフォルダは移動・削除せず保管してください。更新するときは、新しい ZIP の中身で
+同じフォルダを上書きし、`chrome://extensions/` で拡張機能の再読み込みボタンを押します。
+
+<details>
+<summary>ソースコードから使う場合</summary>
+
+```bash
+git clone https://github.com/P0KEBAN/Simple-Volum-Control.git
+```
+
+クローンしたフォルダを、上記の手順 2〜5 と同じ方法で読み込みます。
+
+</details>
 
 ## 🧪 テスト
 
